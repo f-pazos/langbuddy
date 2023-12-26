@@ -17,3 +17,9 @@ Cargo.lock
 # Added by cargo
 
 /target
+/extensions
+
+*.html
+*.txt
+*.jpeg
+.DS_STORE
