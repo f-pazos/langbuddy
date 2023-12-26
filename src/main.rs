@@ -4,9 +4,9 @@ use std::{io, fs};
 use std::path::PathBuf;
 use std::time::{SystemTime, self};
 
+use headless_chrome::types::Bounds;
 use headless_chrome::{Browser, LaunchOptions};
 use headless_chrome::protocol::cdp::Page;
-use html_parser::Dom;
 
 
 const WORD_REFERENCE_SP_EN_QUERY: &str = "https://www.wordreference.com/es/en/translation.asp?spen=";
@@ -31,12 +31,13 @@ fn main() -> anyhow::Result<()>{
     let browser = Browser::new(
         LaunchOptions::default_builder()
             .headless(false)
+            .window_size(Some((1024, 1280)))
             .build()
             .expect("Could not find chrome-executable"),
     )?;
 
     let tab = browser.new_tab()?;
-
+    tab.set_bounds(Bounds::Normal{left:Some(0), top: Some(0), width: Some(1024.0), height: Some(1280.0)})?;
 
     loop { 
         println!("input a word to query");
@@ -46,7 +47,6 @@ fn main() -> anyhow::Result<()>{
         tab.wait_until_navigated()?;
 
         let html = tab.get_content()?;
-        let dom = Dom::parse(&html)?;
 
 
         std::fs::write("out.html", html)?;
