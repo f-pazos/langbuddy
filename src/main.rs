@@ -105,7 +105,7 @@ fn save(word: &String) -> anyhow::Result<()> {
     unsafe {
         if !HAS_WRITTEN {
             let date = Local::now();
-            writeln!(file, "{}{}{}",date.format("%Y-%m-%d. %H:%M:%S") ,"\n", "--------------------");
+            writeln!(file, "\n{}\n{}",date.format("%Y-%m-%d. %H:%M:%S") , "--------------------");
             HAS_WRITTEN = true;
         }
     }
