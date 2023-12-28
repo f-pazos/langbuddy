@@ -16,6 +16,9 @@ use headless_chrome::protocol::cdp::Page;
 
 
 const WORD_REFERENCE_SP_EN_QUERY: &str = "https://www.wordreference.com/es/en/translation.asp?spen=";
+const WORD_REFERENCE_DE_EN_QUERY: &str = "https://www.wordreference.com/deen/";
+
+
 const OUTPUT_FILE: &str = "words.txt";
 
 static mut HAS_WRITTEN: bool = false;
@@ -82,7 +85,7 @@ fn main() -> anyhow::Result<()>{
             continue
         }
 
-        tab.navigate_to(&format!("{}{}", WORD_REFERENCE_SP_EN_QUERY, word))?;
+        tab.navigate_to(&format!("{}{}", WORD_REFERENCE_DE_EN_QUERY, word))?;
 
         last_word = word;
 
