@@ -1,13 +1,10 @@
-use std::error::Error;
-use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use std::path::PathBuf;
-use std::time::{self, SystemTime};
-use std::{fs, io};
+
+use std::io;
 
 use chrono::Local;
-use headless_chrome::protocol::cdp::Page;
+
 use headless_chrome::types::Bounds;
 use headless_chrome::{Browser, LaunchOptions};
 
@@ -33,9 +30,6 @@ struct WordEntries {
 }
 
 fn main() -> anyhow::Result<()> {
-    print!("{}", Preserver::hello());
-    return Ok(());
-
     let browser = Browser::new(
         LaunchOptions::default_builder()
             .headless(false)
@@ -54,19 +48,19 @@ fn main() -> anyhow::Result<()> {
 
     let mut last_word = String::new();
 
+    let mut p = Preserver::read_from_file(&OUTPUT_FILE.to_string())?;
+
     loop {
-        print!(">> ");
-        print!("{}", Preserver::hello());
         io::stdout().flush()?;
 
         let word = input();
 
         match &word {
-            Err(e) => {
+            Err(_e) => {
                 println!("Problem with input.");
                 continue;
             }
-            Ok(e) => (),
+            Ok(_e) => (),
         }
 
         let word = word.unwrap();
@@ -79,9 +73,10 @@ fn main() -> anyhow::Result<()> {
 
             let trimmed = last_word.trim().to_string();
 
-            match save(&trimmed) {
+            p.add_string(&trimmed);
+            match p.write() {
                 Err(e) => println!("Error writing {} to {}: {}", trimmed, OUTPUT_FILE, e),
-                Ok(e) => println!("{} added to {}", trimmed, OUTPUT_FILE),
+                Ok(_e) => println!("{} added to {}", trimmed, OUTPUT_FILE),
             }
 
             last_word.clear();
