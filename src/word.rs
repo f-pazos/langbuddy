@@ -1,3 +1,4 @@
+use std::iter::Map;
 
 pub struct DictionaryNode {
     word: String,
