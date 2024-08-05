@@ -24,7 +24,7 @@ pub struct DictionaryNode {
 // with it. 
 pub struct Dictionary {
     // lexemes: Vec<Lexeme>,
-    pages: Vec<DictionaryPage>,
+    map: Map<Word, DictionaryEntry>,
 }
 
 // A word has no meaning. It is token that, in a given lexical context (language),
