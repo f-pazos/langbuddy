@@ -1,38 +1,22 @@
-// pub struct FlashCard {
-//     word: String,
-//     definitions: String,
-// }
-
-// A dictionary has a vocabulary of words.
-// A word is {representation, meaning}
-
-// Some words have definition entries
-// Some words have parts of speech
 
 pub struct DictionaryNode {
     word: String,
     definitions: Vec<String>,
     homonyms: String,
 }
-
-// A dictionary is a static repository of information organized as a
-// graph. 
-// Each "word" has a definition 
-// Each entry is a list of definitions
-// each definition is a tuple of {POS, meaning: Sentence}
-// each Sentence is itself a list of words, that each have entries associated
-// with it. 
 pub struct Dictionary {
     // lexemes: Vec<Lexeme>,
     map: Map<Word, DictionaryEntry>,
 }
 
-// A word has no meaning. It is token that, in a given lexical context (language),
-// defines a set of possible lexemes it could be associated with.
+// A word is a string with the added constraint that it
+// is somehow meaningful in a language.
 pub struct Word {
     token: String,
 }
 
+// A sentence is a list of words that is meaningful and
+// grammatically correct.
 pub struct Sentence {
     words: Vec<Word>,
 }
@@ -43,12 +27,15 @@ enum PartOfSpeech {
     ADJECTIVE,
 }
 
+// A definition represents the definition of a particular meaning of a word.
 struct Definition {
     word: Word,
     part_of_speech: PartOfSpeech,
     definition: Sentence,
     examples: Vec<Sentence>,
 }
+
+// A dictionary entry represents an entry into a dictionary.
 struct DictionaryEntry {
     word: Word,
     defitions: Vec<Definition>,
