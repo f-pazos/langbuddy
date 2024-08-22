@@ -9,15 +9,13 @@ use browser_session::WordReferenceSpEnSession;
 
 mod word;
 
-const WORD_REFERENCE_DE_EN_QUERY: &str = "https://www.wordreference.com/deen/";
-
 const OUTPUT_FILE: &str = "words.txt";
 
 fn main() -> anyhow::Result<()> {
     let sp_en_session = WordReferenceSpEnSession::new()?;
 
     let mut last_word = String::new();
-    let mut preserver = Preserver::read_from_file(&OUTPUT_FILE.to_string())?;
+    let mut preserver = Preserver::read_from_file(OUTPUT_FILE)?;
 
     loop {
         io::stdout().flush()?;
@@ -35,9 +33,9 @@ fn main() -> anyhow::Result<()> {
                 continue;
             }
 
-            let trimmed = last_word.trim().to_string();
+            let trimmed = last_word.trim();
 
-            preserver.add_string(&trimmed);
+            preserver.add_string(trimmed);
             match preserver.write() {
                 Err(e) => println!("Error writing {} to {}: {}", trimmed, OUTPUT_FILE, e),
                 Ok(_e) => println!("{} added to {}", trimmed, OUTPUT_FILE),
@@ -48,7 +46,6 @@ fn main() -> anyhow::Result<()> {
             continue;
         }
         sp_en_session.lookup(&word);
-        // sp_en_session.navigate_to(&format!("{}{}", WORD_REFERENCE_DE_EN_QUERY, word))?;
 
         last_word = word;
     }

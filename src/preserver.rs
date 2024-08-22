@@ -11,7 +11,7 @@ pub struct Preserver {
 }
 
 impl Preserver {
-    pub fn new(file: &String) -> Self {
+    pub fn new(file: &str) -> Self {
         Preserver {
             output_file: file.to_owned(),
             has_written: false,
@@ -19,7 +19,7 @@ impl Preserver {
         }
     }
 
-    pub fn read_from_file(filename: &String) -> Result<Self> {
+    pub fn read_from_file(filename: &str) -> Result<Self> {
         let mut p = Self::new(filename);
         p.read_buffer()?;
         Ok(p)
@@ -41,7 +41,7 @@ impl Preserver {
 
     // add_string takes a string and appends it to the Preserver's buffer
     // on a new line.
-    pub fn add_string(&mut self, s: &String) {
+    pub fn add_string(&mut self, s: &str) {
         self.buffer.push(b'\n');
         self.buffer.append(&mut s.to_owned().into_bytes());
     }
