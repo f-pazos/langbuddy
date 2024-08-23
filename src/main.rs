@@ -32,7 +32,6 @@ fn main() -> anyhow::Result<()> {
                 println!("no previous word to save");
                 continue;
             }
-
             let trimmed = last_word.trim();
 
             preserver.add_string(trimmed);
@@ -42,10 +41,10 @@ fn main() -> anyhow::Result<()> {
             }
 
             last_word.clear();
-
+            sp_en_session.get_definition();
             continue;
         }
-        sp_en_session.lookup(&word);
+        sp_en_session.lookup(&word)?;
 
         last_word = word;
     }
