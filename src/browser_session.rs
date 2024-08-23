@@ -1,7 +1,7 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use headless_chrome::{Browser, LaunchOptions};
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Selector};
 use anyhow::anyhow;
 
 // A BrowserSession represents a session controlling a Chrome browser window.
@@ -71,10 +71,36 @@ impl WordReferenceSpEnSession {
         format!("{}{}", WORD_REFERENCE_SP_EN_QUERY, word)
     }
 
+    // extract_page creates a WordReferenceSpEnEntry object to represent
+    // the page that is currently displayed.
+    pub fn extract_page(&self) -> anyhow::Result<WordReferenceSpEnEntry> {
+        let table = self.session.live_tab
+            .wait_for_element_with_custom_timeout(
+                "table.WRD.clickTranslate.noTapHighlight tbody",
+                Duration::from_millis(500),
+            )?;
+
+        let document = Html::parse_fragment(&table.get_content()?);
+
+        for row in document.select(&Selector::parse("tr").unwrap()){
+
+        };
+    }
+
+    // split_even_and_odd_rows processes a WordReference dictionary page table
+    // to split it into the entries it represents. WordReference represents
+    // multiple meanings in a single HTML table element. It uses alternating
+    // sections of either "even" or "odd" class rows to differentiate the entries.
+    fn split_even_and_odd_rows(rows: Vec<scraper::ElementRef>) -> Vec<Vec<scraper::ElementRef>>{  
+        let entries = Vec::<Vec<scraper::ElementRef>>::new();
+
+        entries
+    }
+
+
+
     // get_definition returns the definition for the word on the given page. 
     pub fn get_definition(&self) -> anyhow::Result<String>{
-        // let definition_div = self.session.live_tab.wait_for_element("div#articleWRD");
-
         let definition_table = self.session.live_tab.wait_for_element("table.WRD.clickTranslate.noTapHighlight tbody");
         if definition_table.is_err() {
             return Err(definition_table.unwrap_err());
