@@ -17,6 +17,12 @@ fn main() -> anyhow::Result<()> {
     let mut last_word = String::new();
     let mut preserver = Preserver::read_from_file(OUTPUT_FILE)?;
 
+    sp_en_session.lookup("pasar")?;
+    sp_en_session.get_definition()?;
+
+    return Ok(());
+    todo!();
+
     loop {
         io::stdout().flush()?;
 
