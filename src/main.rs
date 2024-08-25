@@ -7,21 +7,26 @@ use preserver::Preserver;
 mod browser_session;
 use browser_session::WordReferenceSpEnSession;
 
-mod word;
+// mod word;
+mod parser;
 
 const OUTPUT_FILE: &str = "words.txt";
 
 fn main() -> anyhow::Result<()> {
     let sp_en_session = WordReferenceSpEnSession::new()?;
 
-    let mut last_word = String::new();
-    let mut preserver = Preserver::read_from_file(OUTPUT_FILE)?;
-
     sp_en_session.lookup("pasar")?;
     sp_en_session.get_definition()?;
 
-    return Ok(());
-    todo!();
+    repl(&sp_en_session)
+    // return Ok(());
+    // todo!();
+
+}
+
+fn repl(sp_en_session: &WordReferenceSpEnSession) -> anyhow::Result<()> { 
+    let mut last_word = String::new();
+    let mut preserver = Preserver::read_from_file(OUTPUT_FILE)?;
 
     loop {
         io::stdout().flush()?;
@@ -47,10 +52,10 @@ fn main() -> anyhow::Result<()> {
             }
 
             last_word.clear();
-            sp_en_session.get_definition();
             continue;
         }
         sp_en_session.lookup(&word)?;
+        sp_en_session.get_definition();
 
         last_word = word;
     }

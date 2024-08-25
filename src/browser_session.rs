@@ -1,10 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use headless_chrome::{Browser, LaunchOptions};
-use scraper::{html, ElementRef, Html, Selector};
-use anyhow::anyhow;
-
-use itertools::Itertools;
+use scraper::{Html, Selector};
 
 use crate::parser;
 
@@ -80,9 +77,12 @@ impl WordReferenceSpEnSession {
         let selector = Selector::parse("tr").unwrap();
 
         let sections = parser::tokenize_table(document.select(&selector));
-        for section in sections {
-            println!("{:?}", parser::extract_table_entry(section));
-        }
+
+        sections.iter()
+            .map(|section| parser::extract_table_entry(section))
+            .filter(|o| o.is_some())
+            .for_each(|entry| println!("{}\n", entry.unwrap()));
+
         return Ok("ok!".to_string());
     }
 }

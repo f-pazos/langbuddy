@@ -1,3 +1,6 @@
+use itertools::Itertools;
+use scraper::{html, ElementRef, Selector};
+use std::fmt;
 
 struct DefinitionTable {
     section_name: String,
@@ -12,6 +15,21 @@ pub struct DefinitionTableEntry {
     examples: Examples,
 }
 
+impl fmt::Display for DefinitionTableEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+
+        let new_line_split = format!("\n{:>9}\t", "");
+        write!(f, 
+            "    word:\t{}\nspan_def:\t{}\n  en_def:\t{}\n span_ex:\t{}\n   en_ex:\t{}", 
+            self.word, 
+            self.spanish_definition, 
+            self.english_definitions.join(&new_line_split), 
+            self.examples.spanish.join(&new_line_split),
+            self.examples.english.join(&new_line_split),
+        )
+    }
+}
+
 pub type DefinitionTableSection<'a> = Vec<scraper::ElementRef<'a>>;
 
 #[derive(Debug)]
@@ -20,7 +38,7 @@ struct Examples {
     english: Vec<String>,
 }
 
-// next processes a WordReference table into groupings of related rows. WordReference
+// tokenize_table processes a WordReference table into groupings of related rows. WordReference
 // splits table entries accross multiple HTML elements, grouped by their class names.
 // For table contents, these classes are alternating "even" and "odd".
 pub fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<DefinitionTableSection<'a>> {
@@ -40,11 +58,12 @@ pub fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<Definition
         current_elems.push(tr);
     };
 
+    result.push(current_elems);
     return result;
 }
 
 // extract_table_entry parses the information found in a single definition table section.
-pub fn extract_table_entry(section: DefinitionTableSection) -> Option<DefinitionTableEntry> {
+pub fn extract_table_entry(section: &DefinitionTableSection) -> Option<DefinitionTableEntry> {
     let (word, definition) = extract_spanish_word_and_definition(&section)?;
     Some(
         DefinitionTableEntry{ 
@@ -64,9 +83,7 @@ fn extract_examples(section: &DefinitionTableSection) -> Examples {
     let collect_language_examples = |lang: &str| {
         all_tds.clone()
             .filter(|e| e.attr("class") == Some(lang))
-            .map(|e| e.text().next())
-            .filter(|o| o.is_some())
-            .map(|o| o.unwrap().to_string())
+            .map(|e| e.text().join(" "))
             .collect::<Vec<String>>()
     };
 
