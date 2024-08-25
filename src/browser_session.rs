@@ -4,6 +4,8 @@ use headless_chrome::{Browser, LaunchOptions};
 use scraper::{html, ElementRef, Html, Selector};
 use anyhow::anyhow;
 
+use itertools::Itertools;
+
 // A BrowserSession represents a session controlling a Chrome browser window.
 pub struct BrowserSession {
     _browser: headless_chrome::Browser,
@@ -44,7 +46,6 @@ const WORD_REFERENCE_SP_EN_QUERY: &str =
 pub struct WordReferenceSpEnSession {
     session: BrowserSession,
 }
-
 pub struct WordReferenceSpEnEntry {
     spanish_word: String,
     spanish_definitions: Vec<String>,
@@ -57,6 +58,8 @@ struct DefinitionTable {
     section_name: String,
     entries: Vec<DefinitionTableEntry>,
 }
+
+#[derive(Debug)]
 struct DefinitionTableEntry {
     word: String,
     spanish_definition: String,
@@ -87,7 +90,93 @@ fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<Vec<scraper::E
     return result;
 }
 
+// extract_table_entry parses the section of rows 
+fn extract_table_entry(rows: Vec<scraper::ElementRef>) -> Option<DefinitionTableEntry> {
+    // let word = match_word(rows)?;
 
+    // let word_selector = Selector::parse("td.FrWrd strong").unwrap();
+    // let english_definition_prefix_selector = Selector::parse("td.To2 span.dsense").unwrap();
+    // let english_definition_selector = Selector::parse("td.ToWrd").unwrap();
+    // let english_example_selector = Selector::parse("td.ToEx").unwrap();
+    // let spanish_example_selector = Selector::parse("td.FrEx").unwrap();
+
+
+    // word: "td.FrWrd strong"
+    // spanish_definition: "td" immediately after ^
+    // english_definition: td.ToWrd
+    // english_def also: Optional("td.To2 span.dsense") + "td.ToWrd"
+
+    // spanish_example: FrEx
+
+    let (word, definition) = extract_word_and_definition(rows)?;
+    
+    Some(
+        DefinitionTableEntry{ 
+            word: word, 
+            spanish_definition: definition, 
+            english_definitions: vec!(),
+            examples: vec!(),
+        })
+}
+
+// extract_word_and_definition 
+fn extract_word_and_definition(rows: Vec<scraper::ElementRef>) -> Option<(String, String)> {
+    // Counts how many <td> elements match the From Word "FrWrd" class. Used to ensure only
+    // one match per table section.
+    let mut count_fr_wrd = 0;
+    let mut word_and_definition = None;
+
+    for row in rows {
+        for (td_1, td_2) in row.select(&Selector::parse("td").unwrap()).tuple_windows() {
+            if td_1.attr("class") == Some("FrWrd") && td_2.attr("class") == None {
+                count_fr_wrd += 1;
+                word_and_definition = sanitize_word_and_definition(td_1, td_2);
+            }
+        };
+    };
+
+    if count_fr_wrd != 1 {
+        return None;
+    };
+
+    word_and_definition
+}
+
+// sanitize_word_and_definition removes extraneous information that might exist in the <td> elements for a word
+// and its definition.
+fn sanitize_word_and_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<(String, String)> {
+    let word = single_selection_match(td_1, "strong")?.text().next()?;
+    let definition = td_2.text().next()?;
+
+    let mut level = 0;
+    let mut taken = 0;
+
+    let scrubbed = definition.trim().chars().take_while(|c|{
+        taken += 1;
+        match c {
+            '(' => level += 1,
+            ')' => level -= 1, 
+            _ => (),
+        };
+        return !(level == 0 && taken > 1);
+    }).collect::<String>();
+
+    
+ 
+    Some((word.to_string(), scrubbed.chars().skip(1).collect()))
+}
+
+// single_selection_match applies the selector to ElementRef, and returns the value if there is exactly
+// one match.
+fn single_selection_match<'a>(element: ElementRef<'a>, selector: &str) -> Option<ElementRef<'a>> {
+    let mut results = element.select(&Selector::parse(selector).unwrap()).collect::<Vec<ElementRef>>();
+    if results.len() != 1 {
+        return None
+    };
+    return results.pop();
+}
+
+// fn extract_spanish_definition(rows: Vec<scraper::ElementRef>) -> Option<
 
 
 
@@ -143,29 +232,22 @@ impl WordReferenceSpEnSession {
         format!("{}{}", WORD_REFERENCE_SP_EN_QUERY, word)
     }
 
-    // extract_page creates a WordReferenceSpEnEntry object to represent
-    // the page that is currently displayed.
-    pub fn extract_page(&self) -> anyhow::Result<WordReferenceSpEnEntry> {
-        let table = self.session.live_tab
-            .wait_for_element_with_custom_timeout(
-                "table.WRD.clickTranslate.noTapHighlight tbody",
-                Duration::from_millis(500),
-            )?;
+    // // extract_page creates a WordReferenceSpEnEntry object to represent
+    // // the page that is currently displayed.
+    // pub fn extract_page(&self) -> anyhow::Result<WordReferenceSpEnEntry> {
+    //     let table = self.session.live_tab
+    //         .wait_for_element_with_custom_timeout(
+    //             "table.WRD.clickTranslate.noTapHighlight tbody",
+    //             Duration::from_millis(500),
+    //         )?;
 
-        let document = Html::parse_fragment(&table.get_content()?);
+    //     let document = Html::parse_fragment(&table.get_content()?);
 
-        for row in document.select(&Selector::parse("tr").unwrap()){
+    //     for row in document.select(&Selector::parse("tr").unwrap()){
 
-        };
-        todo!();
-    }
-
-    fn split_even_and_odd_rows(rows: Vec<scraper::ElementRef>) -> Vec<Vec<scraper::ElementRef>>{  
-        let entries = Vec::<Vec<scraper::ElementRef>>::new();
-
-
-        entries
-    }
+    //     };
+    //     todo!();
+    // }
 
     // get_definition returns the definition for the word on the given page. 
     pub fn get_definition(&self) -> anyhow::Result<String>{
@@ -181,10 +263,7 @@ impl WordReferenceSpEnSession {
 
         let sections = tokenize_table(document.select(&selector));
         for section in sections {
-            for element in section {
-                println!("{}", element.html());
-            }
-            println!();
+            println!("{:?}", extract_table_entry(section));
         }
         return Ok("ok!".to_string());
     }
