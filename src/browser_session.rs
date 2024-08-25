@@ -108,19 +108,18 @@ fn extract_table_entry(rows: Vec<scraper::ElementRef>) -> Option<DefinitionTable
 
     // spanish_example: FrEx
 
-    let (word, definition) = extract_word_and_definition(rows)?;
+    let (word, definition) = extract_word_and_definition(&rows)?;
     
     Some(
         DefinitionTableEntry{ 
             word: word, 
             spanish_definition: definition, 
-            english_definitions: vec!(),
+            english_definitions: extract_english_definitions(&rows),
             examples: vec!(),
         })
 }
 
-// extract_word_and_definition 
-fn extract_word_and_definition(rows: Vec<scraper::ElementRef>) -> Option<(String, String)> {
+fn extract_word_and_definition(rows: &Vec<scraper::ElementRef>) -> Option<(String, String)> {
     // Counts how many <td> elements match the From Word "FrWrd" class. Used to ensure only
     // one match per table section.
     let mut count_fr_wrd = 0;
@@ -142,12 +141,44 @@ fn extract_word_and_definition(rows: Vec<scraper::ElementRef>) -> Option<(String
     word_and_definition
 }
 
+// extract_english_definitions extracts all english definitions associated with the section
+// of the table.
+fn extract_english_definitions(rows: &Vec<scraper::ElementRef>) -> Vec<String> {
+    let mut definitions = vec!();
+    for row in rows {
+        for (td_1, td_2) in 
+            row.select(&Selector::parse("td").unwrap())
+                .tuple_windows()
+                .filter(|(_, td_2)| td_2.attr("class") == Some("ToWrd")){
+            let definition = extract_english_definition(td_1, td_2);
+            if definition.is_some() {
+                definitions.push(definition.unwrap());
+            }
+        };
+    };
+
+    definitions
+}
+
+fn extract_english_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<String> {
+    let mut prefix = String::new();
+    let span = single_selection_match(td_1, "span.dsense");
+    if span.is_some() { 
+        prefix = format!("{} ", span.unwrap().text().join(" "));
+    }
+    let suffix = td_2.text().next()?;
+    
+    Some(format!("{}{}", prefix, suffix))
+}
+
 // sanitize_word_and_definition removes extraneous information that might exist in the <td> elements for a word
 // and its definition.
 fn sanitize_word_and_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<(String, String)> {
     let word = single_selection_match(td_1, "strong")?.text().next()?;
     let definition = td_2.text().next()?;
 
+    // The definition is within parenthesis so we need to trim everything that comes after them. 
+    // In some cases the same <td> is reused for a portion of the english definition.
     let mut level = 0;
     let mut taken = 0;
 
@@ -160,8 +191,6 @@ fn sanitize_word_and_definition(td_1: scraper::ElementRef, td_2: scraper::Elemen
         };
         return !(level == 0 && taken > 1);
     }).collect::<String>();
-
-    
  
     Some((word.to_string(), scrubbed.chars().skip(1).collect()))
 }
@@ -176,7 +205,6 @@ fn single_selection_match<'a>(element: ElementRef<'a>, selector: &str) -> Option
     return results.pop();
 }
 
-// fn extract_spanish_definition(rows: Vec<scraper::ElementRef>) -> Option<
 
 
 
