@@ -54,6 +54,7 @@ pub struct WordReferenceSpEnEntry {
     english_examples: Vec<String>,
 }
 
+
 struct DefinitionTable {
     section_name: String,
     entries: Vec<DefinitionTableEntry>,
@@ -64,7 +65,13 @@ struct DefinitionTableEntry {
     word: String,
     spanish_definition: String,
     english_definitions: Vec<String>,
-    examples: Vec<String>,
+    examples: Examples,
+}
+
+#[derive(Debug)]
+struct Examples {
+    spanish: Vec<String>,
+    english: Vec<String>,
 }
 
 // next processes a WordReference table into groupings of related rows. WordReference
@@ -90,36 +97,40 @@ fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<Vec<scraper::E
     return result;
 }
 
-// extract_table_entry parses the section of rows 
+// extract_table_entry parses the information found in a single definition table section.
 fn extract_table_entry(rows: Vec<scraper::ElementRef>) -> Option<DefinitionTableEntry> {
-    // let word = match_word(rows)?;
-
-    // let word_selector = Selector::parse("td.FrWrd strong").unwrap();
-    // let english_definition_prefix_selector = Selector::parse("td.To2 span.dsense").unwrap();
-    // let english_definition_selector = Selector::parse("td.ToWrd").unwrap();
-    // let english_example_selector = Selector::parse("td.ToEx").unwrap();
-    // let spanish_example_selector = Selector::parse("td.FrEx").unwrap();
-
-
-    // word: "td.FrWrd strong"
-    // spanish_definition: "td" immediately after ^
-    // english_definition: td.ToWrd
-    // english_def also: Optional("td.To2 span.dsense") + "td.ToWrd"
-
-    // spanish_example: FrEx
-
-    let (word, definition) = extract_word_and_definition(&rows)?;
-    
+    let (word, definition) = extract_spanish_word_and_definition(&rows)?;
     Some(
         DefinitionTableEntry{ 
             word: word, 
             spanish_definition: definition, 
             english_definitions: extract_english_definitions(&rows),
-            examples: vec!(),
+            examples: extract_examples(&rows),
         })
 }
 
-fn extract_word_and_definition(rows: &Vec<scraper::ElementRef>) -> Option<(String, String)> {
+// extract_examples parses the rows and returns a list of examples, both spanish and english.
+fn extract_examples(rows: &Vec<scraper::ElementRef>) -> Examples {
+    let td_selector = Selector::parse("td").unwrap();
+    let all_tds = rows.iter()
+        .flat_map(|e| e.select(&td_selector));
+
+    let collect_language_examples = |lang: &str| {
+        all_tds.clone()
+            .filter(|e| e.attr("class") == Some(lang))
+            .map(|e| e.text().next())
+            .filter(|o| o.is_some())
+            .map(|o| o.unwrap().to_string())
+            .collect::<Vec<String>>()
+    };
+
+    return Examples{
+        spanish: collect_language_examples("FrEx"),
+        english: collect_language_examples("ToEx"),
+    };
+}
+
+fn extract_spanish_word_and_definition(rows: &Vec<scraper::ElementRef>) -> Option<(String, String)> {
     // Counts how many <td> elements match the From Word "FrWrd" class. Used to ensure only
     // one match per table section.
     let mut count_fr_wrd = 0;
