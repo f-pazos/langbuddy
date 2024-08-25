@@ -68,6 +68,8 @@ struct DefinitionTableEntry {
     examples: Examples,
 }
 
+type DefinitionTableSection<'a> = Vec<scraper::ElementRef<'a>>;
+
 #[derive(Debug)]
 struct Examples {
     spanish: Vec<String>,
@@ -77,7 +79,7 @@ struct Examples {
 // next processes a WordReference table into groupings of related rows. WordReference
 // splits table entries accross multiple HTML elements, grouped by their class names.
 // For table contents, these classes are alternating "even" and "odd".
-fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<Vec<scraper::ElementRef<'a>>>{
+fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<DefinitionTableSection<'a>> {
     let mut result = vec!();
 
     let mut current_class: Option<&str> = None;
@@ -98,21 +100,21 @@ fn tokenize_table<'a, 'b>(selection: html::Select<'a, 'b>) -> Vec<Vec<scraper::E
 }
 
 // extract_table_entry parses the information found in a single definition table section.
-fn extract_table_entry(rows: Vec<scraper::ElementRef>) -> Option<DefinitionTableEntry> {
-    let (word, definition) = extract_spanish_word_and_definition(&rows)?;
+fn extract_table_entry(section: DefinitionTableSection) -> Option<DefinitionTableEntry> {
+    let (word, definition) = extract_spanish_word_and_definition(&section)?;
     Some(
         DefinitionTableEntry{ 
             word: word, 
             spanish_definition: definition, 
-            english_definitions: extract_english_definitions(&rows),
-            examples: extract_examples(&rows),
+            english_definitions: extract_english_definitions(&section),
+            examples: extract_examples(&section),
         })
 }
 
 // extract_examples parses the rows and returns a list of examples, both spanish and english.
-fn extract_examples(rows: &Vec<scraper::ElementRef>) -> Examples {
+fn extract_examples(section: &DefinitionTableSection) -> Examples {
     let td_selector = Selector::parse("td").unwrap();
-    let all_tds = rows.iter()
+    let all_tds = section.iter()
         .flat_map(|e| e.select(&td_selector));
 
     let collect_language_examples = |lang: &str| {
@@ -130,14 +132,14 @@ fn extract_examples(rows: &Vec<scraper::ElementRef>) -> Examples {
     };
 }
 
-fn extract_spanish_word_and_definition(rows: &Vec<scraper::ElementRef>) -> Option<(String, String)> {
-    // Counts how many <td> elements match the From Word "FrWrd" class. Used to ensure only
-    // one match per table section.
+fn extract_spanish_word_and_definition(section: &DefinitionTableSection) -> Option<(String, String)> {
+    // Count how many <td> elements match the From Word "FrWrd" class. Ensure there is only one 
+    // match per section.
     let mut count_fr_wrd = 0;
     let mut word_and_definition = None;
 
-    for row in rows {
-        for (td_1, td_2) in row.select(&Selector::parse("td").unwrap()).tuple_windows() {
+    for tr in section {
+        for (td_1, td_2) in tr.select(&Selector::parse("td").unwrap()).tuple_windows() {
             if td_1.attr("class") == Some("FrWrd") && td_2.attr("class") == None {
                 count_fr_wrd += 1;
                 word_and_definition = sanitize_word_and_definition(td_1, td_2);
@@ -154,21 +156,22 @@ fn extract_spanish_word_and_definition(rows: &Vec<scraper::ElementRef>) -> Optio
 
 // extract_english_definitions extracts all english definitions associated with the section
 // of the table.
-fn extract_english_definitions(rows: &Vec<scraper::ElementRef>) -> Vec<String> {
-    let mut definitions = vec!();
-    for row in rows {
-        for (td_1, td_2) in 
-            row.select(&Selector::parse("td").unwrap())
-                .tuple_windows()
-                .filter(|(_, td_2)| td_2.attr("class") == Some("ToWrd")){
-            let definition = extract_english_definition(td_1, td_2);
-            if definition.is_some() {
-                definitions.push(definition.unwrap());
-            }
-        };
+fn extract_english_definitions(section: &DefinitionTableSection) -> Vec<String> {
+    let mut result = vec!();
+
+    for tr in section {
+        let mut definitions = tr.select(&Selector::parse("td").unwrap())
+            .tuple_windows()
+            .filter(|(_, td_2)| td_2.attr("class") == Some("ToWrd"))
+            .map(|(td_1, td_2)| extract_english_definition(td_1, td_2))
+            .filter(|o| o.is_some())
+            .map(|o| o.unwrap())
+            .collect::<Vec<String>>();
+
+        result.append(&mut definitions);
     };
 
-    definitions
+    result
 }
 
 fn extract_english_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<String> {
