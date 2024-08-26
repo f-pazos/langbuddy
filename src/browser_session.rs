@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use headless_chrome::{Browser, LaunchOptions};
 use scraper::{Html, Selector};
@@ -38,35 +38,32 @@ impl BrowserSession {
     }
 }
 
-const WORD_REFERENCE: &str = "https://www.wordreference.com";
-const WORD_REFERENCE_SP_EN_QUERY: &str =
-    "https://www.wordreference.com/es/en/translation.asp?spen=";
-
 pub struct WordReferenceSpEnSession {
+    url: String,
     session: BrowserSession,
 }
 
 impl WordReferenceSpEnSession {
     // new returns a new spanish-english session for word reference.com.
-    pub fn new() -> anyhow::Result<Self> {
+    pub fn new(url: &str) -> anyhow::Result<Self> {
         let session = BrowserSession::new()?;
-        session.navigate_to(WORD_REFERENCE)?;
-        return Ok(Self { session: session });
+        session.navigate_to(url)?;
+        return Ok(Self { session: session, url: url.to_string()});
     }
 
     // lookup navigates to the entry for the given word in the dictionary.
     pub fn lookup(&self, word: &str) -> anyhow::Result<()>{
-        self.session.navigate_to(&Self::word_query_url(word))
+        self.session.navigate_to(&self.word_query_url(word))
     }
 
     // word_query_url builds the URL to search for the given word.
-    fn word_query_url(word: &str) -> String {
-        format!("{}{}", WORD_REFERENCE_SP_EN_QUERY, word)
+    fn word_query_url(&self, word: &str) -> String {
+        format!("{}{}", self.url, word)
     }
 
     // get_definition returns the definition for the word on the given page. 
     pub fn get_definition(&self) -> anyhow::Result<String>{
-        let definition_table = self.session.live_tab.wait_for_element("table.WRD.clickTranslate.noTapHighlight");
+        let definition_table = self.session.live_tab.wait_for_element_with_custom_timeout("table.WRD.clickTranslate.noTapHighlight", Duration::new(2, 0));
         if definition_table.is_err() {
             return Err(definition_table.unwrap_err());
         }

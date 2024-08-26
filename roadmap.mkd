@@ -1,3 +1,45 @@
-# 11/20
+# 11/20/23
 
 [x]  Read and print something.
+
+
+
+# 08/25/2024.
+Making real strides. Parser is becoming useful
+
+## UX improvements: 
+* mark words for study
+    - reading a definition, see things I don't know that I'd like to know more about.
+      still finishing studying the current thing though, would like to save for later.
+
+* interact with each definition separately. Save some for further study.
+* interact with each word of a definition separately.
+
+## Learning Improvements:
+* Create review session concept. 
+    - Add words to session.
+    - Go through each word.
+    - Mark comfort level:
+        - 1, no clue.
+        - 2, partial knowledge.
+        - 3, fully familiar.
+    - Flow:
+        - Prompt word
+        - Respond familiarity
+        - Confirm familiarity level, or override existing one.
+* Create progress tracker, with exponential backoff model.
+* Rich awareness of words available in:
+    - definitions
+    - examples
+
+## Scraper Improvements;
+* scrape conjugation pages
+* scrape parts of speech
+* automatically scrape words.
+* rate limiter.
+* interface with NordVPN to change address every 10 mins or so.
+
+
+# 8/26/2024: Make REPL with Commands
+* parse for keyword, "langbuddy".
+* implement "save" this way.
