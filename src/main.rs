@@ -19,9 +19,6 @@ fn main() -> anyhow::Result<()> {
     sp_en_session.get_definition()?;
 
     repl(&sp_en_session)
-    // return Ok(());
-    // todo!();
-
 }
 
 fn repl(sp_en_session: &WordReferenceSpEnSession) -> anyhow::Result<()> { 

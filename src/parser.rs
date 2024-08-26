@@ -9,10 +9,16 @@ struct DefinitionTable {
 
 #[derive(Debug)]
 pub struct DefinitionTableEntry {
-    word: String,
+    word: TaggedWord,
     spanish_definition: String,
-    english_definitions: Vec<String>,
+    english_definitions: Vec<TaggedWord>,
     examples: Examples,
+}
+
+impl fmt::Display for TaggedWord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} <{}>", self.word, self.part_of_speech)
+    }
 }
 
 impl fmt::Display for DefinitionTableEntry {
@@ -23,7 +29,7 @@ impl fmt::Display for DefinitionTableEntry {
             "    word:\t{}\nspan_def:\t{}\n  en_def:\t{}\n span_ex:\t{}\n   en_ex:\t{}", 
             self.word, 
             self.spanish_definition, 
-            self.english_definitions.join(&new_line_split), 
+            self.english_definitions.iter().map(|tw| format!("{}", tw)).join(&new_line_split), 
             self.examples.spanish.join(&new_line_split),
             self.examples.english.join(&new_line_split),
         )
@@ -36,6 +42,12 @@ pub type DefinitionTableSection<'a> = Vec<scraper::ElementRef<'a>>;
 struct Examples {
     spanish: Vec<String>,
     english: Vec<String>,
+}
+
+#[derive(Debug)]
+struct TaggedWord {
+    word: String,
+    part_of_speech: String,
 }
 
 // tokenize_table processes a WordReference table into groupings of related rows. WordReference
@@ -93,7 +105,7 @@ fn extract_examples(section: &DefinitionTableSection) -> Examples {
     };
 }
 
-fn extract_spanish_word_and_definition(section: &DefinitionTableSection) -> Option<(String, String)> {
+fn extract_spanish_word_and_definition(section: &DefinitionTableSection) -> Option<(TaggedWord, String)> {
     // Count how many <td> elements match the From Word "FrWrd" class. Ensure there is only one 
     // match per section.
     let mut count_fr_wrd = 0;
@@ -103,7 +115,7 @@ fn extract_spanish_word_and_definition(section: &DefinitionTableSection) -> Opti
         for (td_1, td_2) in tr.select(&Selector::parse("td").unwrap()).tuple_windows() {
             if td_1.attr("class") == Some("FrWrd") && td_2.attr("class") == None {
                 count_fr_wrd += 1;
-                word_and_definition = sanitize_word_and_definition(td_1, td_2);
+                word_and_definition = parse_word_and_definition(td_1, td_2);
             }
         };
     };
@@ -117,7 +129,7 @@ fn extract_spanish_word_and_definition(section: &DefinitionTableSection) -> Opti
 
 // extract_english_definitions extracts all english definitions associated with the section
 // of the table.
-fn extract_english_definitions(section: &DefinitionTableSection) -> Vec<String> {
+fn extract_english_definitions(section: &DefinitionTableSection) -> Vec<TaggedWord> {
     let mut result = vec!();
 
     for tr in section {
@@ -127,7 +139,7 @@ fn extract_english_definitions(section: &DefinitionTableSection) -> Vec<String> 
             .map(|(td_1, td_2)| extract_english_definition(td_1, td_2))
             .filter(|o| o.is_some())
             .map(|o| o.unwrap())
-            .collect::<Vec<String>>();
+            .collect::<Vec<TaggedWord>>();
 
         result.append(&mut definitions);
     };
@@ -135,21 +147,37 @@ fn extract_english_definitions(section: &DefinitionTableSection) -> Vec<String> 
     result
 }
 
-fn extract_english_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<String> {
+fn extract_english_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<TaggedWord> {
     let mut prefix = String::new();
     let span = single_selection_match(td_1, "span.dsense");
     if span.is_some() { 
         prefix = format!("{} ", span.unwrap().text().join(" "));
     }
     let suffix = td_2.text().next()?;
+
+    let pos = extract_pos_from_td(td_2).unwrap_or("no_POS".to_string());
     
-    Some(format!("{}{}", prefix, suffix))
+    Some(
+        TaggedWord{
+            word: format!("{}{}", prefix, suffix),
+            part_of_speech: pos,
+        },
+    )
 }
 
-// sanitize_word_and_definition removes extraneous information that might exist in the <td> elements for a word
+// extract_pos_from_td parses the part of speech from within the <td> element.
+// 
+fn extract_pos_from_td(td: scraper::ElementRef) -> Option<String> {
+    Some(single_selection_match(td, "em.POS2")?.text().join(" "))
+}
+
+// parse_word_and_definition removes extraneous information that might exist in the <td> elements for a word
 // and its definition.
-fn sanitize_word_and_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<(String, String)> {
+fn parse_word_and_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> Option<(TaggedWord, String)> {
     let word = single_selection_match(td_1, "strong")?.text().next()?;
+
+    let pos = extract_pos_from_td(td_1).unwrap_or("no_POS".to_string());
+
     let definition = td_2.text().next()?;
 
     // The definition is within parenthesis so we need to trim everything that comes after them. 
@@ -167,7 +195,15 @@ fn sanitize_word_and_definition(td_1: scraper::ElementRef, td_2: scraper::Elemen
         return !(level == 0 && taken > 1);
     }).collect::<String>();
  
-    Some((word.to_string(), scrubbed.chars().skip(1).collect()))
+    Some(
+        (
+            TaggedWord{
+                word: word.to_string(), 
+                part_of_speech: pos
+            }, 
+            scrubbed.chars().skip(1).collect(),
+        ),
+    )
 }
 
 // single_selection_match applies the selector to ElementRef, and returns the value if there is exactly
