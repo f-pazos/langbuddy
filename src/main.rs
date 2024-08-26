@@ -10,8 +10,9 @@ use browser_session::WordReferenceSpEnSession;
 // mod word;
 mod parser;
 mod langbuddy;
+use langbuddy::LanguageBuddy;
 
-const OUTPUT_FILE: &str = "words.txt";
+const OUTPUT_FILE: &str = "/Users/fpazos/workspace/memorizer/words.txt";
 
 const WORD_REFERENCE: &str = "https://www.wordreference.com";
 const WORD_REFERENCE_SP_EN_QUERY: &str =
@@ -26,54 +27,50 @@ fn main() -> anyhow::Result<()> {
         println!("couldn't navigate to definition!");
     }
 
-    repl(&sp_en_session)
+    let mut lb = LanguageBuddy::new(OUTPUT_FILE)?;
+    lb.repl(&sp_en_session)
 }
 
-fn repl(sp_en_session: &WordReferenceSpEnSession) -> anyhow::Result<()> { 
-    let mut last_word = String::new();
-    let mut preserver = Preserver::read_from_file(OUTPUT_FILE)?;
+// fn repl(sp_en_session: &WordReferenceSpEnSession) -> anyhow::Result<()> { 
+//     let mut last_word = String::new();
+//     let mut preserver = Preserver::read_from_file(OUTPUT_FILE)?;
 
-    loop {
-        io::stdout().flush()?;
+//     loop {
+//         io::stdout().flush()?;
 
-        let word = input();
-        if word.is_err() {
-            println!("Problem with input.");
-            continue;
-        }
-        let word = word.unwrap();
+//         let word = input();
+//         if word.is_err() {
+//             println!("Problem with input.");
+//             continue;
+//         }
+//         let word = word.unwrap();
 
-        if word == "\n" {
-            if last_word.is_empty() || last_word == "\n" {
-                println!("no previous word to save");
-                continue;
-            }
-            let trimmed = last_word.trim();
+//         if word == "\n" {
+//             if last_word.is_empty() || last_word == "\n" {
+//                 println!("no previous word to save");
+//                 continue;
+//             }
+//             let trimmed = last_word.trim();
 
-            preserver.add_string(trimmed);
-            match preserver.write() {
-                Err(e) => println!("Error writing {} to {}: {}", trimmed, OUTPUT_FILE, e),
-                Ok(_e) => println!("{} added to {}", trimmed, OUTPUT_FILE),
-            }
+//             preserver.add_string(trimmed);
+//             match preserver.write() {
+//                 Err(e) => println!("Error writing {} to {}: {}", trimmed, OUTPUT_FILE, e),
+//                 Ok(_e) => println!("{} added to {}", trimmed, OUTPUT_FILE),
+//             }
 
-            last_word.clear();
-            continue;
-        }
-        if sp_en_session.lookup(&word).is_err() {
-            println!("Error looking up definition!");
-        };
+//             last_word.clear();
+//             continue;
+//         }
+//         if sp_en_session.lookup(&word).is_err() {
+//             println!("Error looking up definition!");
+//         };
 
-        let val = sp_en_session.get_definition();
-        if val.is_err(){
-            println!("Error getting definition: {}", val.unwrap_err());
-        };
+//         let val = sp_en_session.get_definition();
+//         if val.is_err(){
+//             println!("Error getting definition: {}", val.unwrap_err());
+//         };
 
-        last_word = word;
-    }
-}
+//         last_word = word;
+//     }
+// }
 
-fn input() -> anyhow::Result<String> {
-    let mut s = String::new();
-    io::stdin().read_line(&mut s)?;
-    return Ok(s);
-}

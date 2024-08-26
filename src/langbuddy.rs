@@ -4,13 +4,13 @@ use std::io::Write;
 use crate::Preserver;
 use crate::browser_session;
 
-struct LanguageBuddy {
+pub struct LanguageBuddy {
     preserver: Preserver,
 }
 
 impl LanguageBuddy {
     // Return a new LanguageBuddy instance.
-    fn new(output_file: &str) -> anyhow::Result<LanguageBuddy>{
+    pub fn new(output_file: &str) -> anyhow::Result<LanguageBuddy>{
         let preserver = Preserver::read_from_file(output_file)?;
 
         Ok(
@@ -20,7 +20,7 @@ impl LanguageBuddy {
         )
     }
 
-    fn repl(&mut self, sp_en_session: &browser_session::WordReferenceSpEnSession) -> anyhow::Result<()> { 
+    pub fn repl(&mut self, sp_en_session: &browser_session::WordReferenceSpEnSession) -> anyhow::Result<()> { 
         let mut last_word = String::new();
 
         loop {
