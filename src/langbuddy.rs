@@ -10,7 +10,7 @@ use crate::browser_session::{self, WordReferenceSpEnSession};
 pub struct LanguageBuddy{
     preserver: Preserver,
     session: browser_session::WordReferenceSpEnSession,
-    last_word: String,
+    current_word: String,
 }
 
 const WORD_REFERENCE_SP_EN_QUERY: &str =
@@ -31,7 +31,9 @@ impl LanguageBuddy {
 
         let session = WordReferenceSpEnSession::new(WORD_REFERENCE_SP_EN_QUERY)?;
 
-        session.lookup("pasar")?;
+        let first_word = "pasar";
+
+        session.lookup(first_word)?;
         if session.get_definition().is_err(){
             println!("couldn't navigate to definition!");
         }
@@ -40,85 +42,65 @@ impl LanguageBuddy {
             LanguageBuddy{
                 preserver: preserver,
                 session: session,
-                last_word: String::new(),
+                current_word: first_word.to_string(),
             }
         )
     }
 
+    // do_repl calls the loop. Also handles any necessary meta-data concerning loop lifetime
+    // such as number of loops, timeouts, user-progress, etc. 
     pub fn do_repl(&mut self) {
         loop {
             self.repl();
+        } 
+    }
+
+    // repl is the main loop that handles user interaction.
+    pub fn repl(&mut self) -> anyhow::Result<()> { 
+        let input = self.parse_input()?;
+        match input {
+            UserInput::Word(w) => {
+                return self.handle_word(&w);
+            },
+            UserInput::Command(c) => {
+                return self.handle_command(&c);
+            }
+        }
+    }
+
+    // handle_word navigates the LanguageBuddy website and scrapes the page
+    // contents for subsequent use.
+    fn handle_word(&mut self, word: &str) -> anyhow::Result<()>{
+        let word = word.trim();
+        if word.is_empty() {
+            return Err(anyhow!("empty word"));
         }
 
-    }
-    pub fn repl(&mut self) -> anyhow::Result<()> { 
-            let input = self.parse_input()?;
-            match input {
-                UserInput::Word(w) => {
-                    return self.handle_word(&w);
-                },
-                UserInput::Command(c) => {
-                    return self.handle_command(&c);
-                }
-            }
+        self.session.lookup(&word)?;
+        self.session.get_definition()?;
 
-            // if matches!(input, UserInput::Word(w)) {
-            //     return self.handle_word(w)
-            // }
-            // if input == UserInput::Word {
-            //     self.handle_word()
-            // } 
-
-            // match input {
-            //     UserInput::Command(c) => {
-            //         println!("Command({})", c)
-            //     },
-            //     UserInput::Word(w) => {
-            //         println!("Word({})", w)
-            //     }
-            // }
-
-            // if word == "\n" {
-            //     if last_word.is_empty() || last_word == "\n" {
-            //         println!("no previous word to save");
-            //         continue;
-            //     }
-            //     let trimmed = last_word.trim();
-            //     self.save(trimmed);
-
-            //     last_word.clear();
-            //     continue;
-            // }
-            // self.lookup_word(&word);
-            // last_word = word;
-
-            Ok(())
-    }
-
-    fn handle_word(&mut self, word: &str) -> anyhow::Result<()>{
         Ok(())
     }
     fn handle_command(&mut self, command: &Command) -> anyhow::Result<()>{
+        match command {
+            Command::Save => {
+                match self.do_save(){
+                    Ok(()) => println!("saved successfully!"),
+                    Err(e) => println!("error: {}", e),
+                }
+            }
+        }
         Ok(())
     }
 
-    fn save(&mut self, word: &str){
-        self.preserver.add_string(word);
-        match self.preserver.write() {
-            Err(e) => println!("Error writing {} to preserver output: {}", word, e),
-            Ok(_e) => println!("{} added to preserver output", word),
+    fn do_save(&mut self) -> anyhow::Result<()>{
+        self.preserver.add_string(&self.current_word);
+
+        let result = self.preserver.write();
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(anyhow!("failed to write word {} to preserver output: {}", self.current_word, e)),
         }
-    }
-
-    fn lookup_word(&self, word: &str) {
-        if self.session.lookup(&word).is_err() {
-            println!("Error looking up definition!");
-        };
-
-        let val = self.session.get_definition();
-        if val.is_err(){
-            println!("Error getting definition: {}", val.unwrap_err());
-        };
     }
 
     // parse_input parses the user's input for later use.
@@ -152,8 +134,6 @@ impl fmt::Display for Command {
         }
     }
 }
-
-
 
 enum UserInput {
     Command(Command),
