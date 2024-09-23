@@ -14,9 +14,8 @@ use langbuddy::LanguageBuddy;
 
 const OUTPUT_FILE: &str = "/Users/fpazos/workspace/memorizer/words.txt";
 
-const WORD_REFERENCE: &str = "https://www.wordreference.com";
-
 fn main() -> anyhow::Result<()> {
     let mut lb = LanguageBuddy::new(OUTPUT_FILE)?;
-    lb.repl(&sp_en_session)
+    lb.do_repl();
+    Ok(())
 }

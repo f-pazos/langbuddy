@@ -114,8 +114,12 @@ impl LanguageBuddy {
         };
 
         let word = word.unwrap();
+        let word = word.trim();
 
-        if word == "save".to_string() {
+        println!("The word you said was {}. comparison: {}", word, word == "save");
+
+
+        if word == "save" {
             return Ok(UserInput::Command(Command::Save));
         }
 
