@@ -81,6 +81,8 @@ impl LanguageBuddy {
 
         Ok(())
     }
+
+    // handle_command runs a command supported by LanguageBuddy.
     fn handle_command(&mut self, command: &Command) -> anyhow::Result<()>{
         match command {
             Command::Save => {
@@ -93,11 +95,12 @@ impl LanguageBuddy {
         Ok(())
     }
 
+    // do_save saves the preserver result for later reuse. The LanguageBuddy
+    // calls its preserver to save the given word.
     fn do_save(&mut self) -> anyhow::Result<()>{
         self.preserver.add_string(&self.current_word);
 
-        let result = self.preserver.write();
-        match result {
+        match self.preserver.write() {
             Ok(_) => Ok(()),
             Err(e) => Err(anyhow!("failed to write word {} to preserver output: {}", self.current_word, e)),
         }
@@ -109,15 +112,11 @@ impl LanguageBuddy {
         let word = input();
 
         if word.is_err() {
-            println!("Problem with input.");
-            return Err(anyhow!("oopsies"));
+            return Err(anyhow!("problem receiving input: {}", word.unwrap_err()));
         };
 
         let word = word.unwrap();
         let word = word.trim();
-
-        println!("The word you said was {}. comparison: {}", word, word == "save");
-
 
         if word == "save" {
             return Ok(UserInput::Command(Command::Save));

@@ -68,12 +68,13 @@ impl WordReferenceSpEnSession {
             return Err(definition_table.unwrap_err());
         }
         let definition_table = definition_table.unwrap();
+
         let html = definition_table.get_content()?;
         let document = Html::parse_fragment(&html);
 
         let selector = Selector::parse("tr").unwrap();
 
-        let sections = parser::tokenize_table(document.select(&selector));
+        let sections = parser::split_table_into_entries(document.select(&selector));
 
         sections.iter()
             .map(|section| parser::extract_table_entry(section))
@@ -81,6 +82,18 @@ impl WordReferenceSpEnSession {
             .for_each(|entry| println!("{}\n", entry.unwrap()));
 
         return Ok("ok!".to_string());
+    }
+
+    /**
+     * navigate_and_scrape_page attempts to navigate the browser session to the WordReference page
+     * associated with the given word. 
+     */
+    pub fn navigate_and_scrape_page(&self, word: &str) -> anyhow::Result<parser::WordReferencePage> {
+        self.lookup(word)?;
+
+        self.session.live_tab.wait_for_element_with_custom_timeout("table.WRD.clickTranslate.noTapHighlight", Duration::new(2,0))?;
+        let page_html = self.session.live_tab.get_content()?;
+        return parser::scrape_html(page_html);
     }
 }
 

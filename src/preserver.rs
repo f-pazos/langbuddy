@@ -46,3 +46,39 @@ impl Preserver {
         self.buffer.append(&mut s.to_owned().into_bytes());
     }
 }
+
+
+/**
+ * Development Skeleton
+ *
+ * type EntryID String
+ *  
+ * type EntryCache struct {
+ *      words_to_pages: Map<String, EntryID>
+ *      pages: Map<EntryID, Entry>
+ * } 
+ *
+ * type Version int;
+ *  
+ * type Entry {
+ *      word: String,
+ *      synonyms: Vec<String>,
+ *      also_appears: Vec<String>, 
+ *      principal_translations: Vec<SpEnDefinition>, 
+ *      additional_translations: Vec<SpEnDefinition>, 
+ *      compound_forms: Vec<Definition>
+ * 
+ * 
+ *      data_version: Version,
+ *      date_retrieved: Time,
+ * }    
+ *      // ? maybe consider these.
+ *      alternate_forms: 
+ * }
+ * 
+ * 
+ * 
+ */
+pub fn dorp(){
+
+}
