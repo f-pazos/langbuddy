@@ -1,0 +1,139 @@
+## TODO:
+
+
+### Monday. September 30, 2024.
+
+# PRESERVER IMPROVEMENTS
+- []: implement an information aware data model for the preserver.
+    - []: define capabilities
+    - []: define types to express capabilities
+    - []: define pathway to add new fields and expand format
+    - []: implement that shid
+
+# INFRA:
+- []: create separate debug and interactive
+      run modes.
+
+
+Tuesday. September 24, 2024. 
+
+
+
+# data model ideas 
+  type EntryID String
+   
+  type EntryCache struct {
+       words_to_pages: Map<String, EntryID>
+       pages: Map<EntryID, Entry>
+  } 
+
+  // The Data Model version of the cache entry. Used for expanding feature sets.
+  type Version int;
+   
+  type Entry {
+       word: String,
+       synonyms: Vec<String>,
+       also_appears: Vec<String>, 
+       principal_translations: Vec<SpEnDefinition>, 
+       additional_translations: Vec<SpEnDefinition>, 
+       compound_forms: Vec<Definition>
+  
+  
+       data_version: Version,
+       date_retrieved: Time,
+ }    
+      // ? maybe consider these.
+      alternate_forms: 
+ 
+
+
+
+
+
+
+<DESIGN>
+The preserver needs to support the following:
+- save all information extracted when querying wordreference site.
+- maintain versioning that ensures word entries are fully up to date.
+
+- have metadata:
+    - date queried 
+- eventually support training metadata:
+    - first seen.
+    - result of prompting. 
+
+
+The preserver looks like this:
+words: Map<String, Entry>
+
+Entry must support a versioning structure with lazy updating:
+
+Each action performed has a minimum PreserverEntry version associated with it.
+Whenever the preserver performs those actions, it will use the previously
+stored entries as a cache. If the stored version is sufficiently high, it will
+use it. If it is too low, it will re-look up the word information.
+
+</DESIGN>
+
+===
+
+## COMPLETED ##
+Monday. September 23, 2024.
+- [x]: get languagebuddy to build using new LanguageBuddy object
+    - [x] Preserver that can run "save"
+    - [x] Sesssion that can lookup a word, store its information, and spit it back out.
+
+=== 
+
+# BACKLOG
+
+## SCRAPER
+- parts of speech awareness
+- save page of base word (first word that pops up in table)
+
+
+## USER EXPERIENCE
+- print out messages when initiated and ready to go.
+
+## ARCHITECTURE
+- improve browser session interaction:
+    - tie browser session lifetime to process.
+    - headless vs non-headless.
+
+- improve network time out handling:
+    - check speed with ping
+    - set latency timeouts accordingly
+    - automatically retry with a longer timeout
+
+
+## CODEHEALTH
+- Refactor browser_session to create enums for different website/language sessions.
+- Tie browser process to program process (close browser closes langbuddy)
+
+- implement expressive error handling
+    - decide what to do with errors
+    - decide what errors are silent and which should be shown to users.
+
+- implement configurable logging module that can be turned on or off at buildtime.
+- logging that will store problematic pages.
+    - logging that has context.
+
+
+## PERSISTANCE
+- seems to add a lot of new lines to words.txt?
+
+- improve output file saving.
+
+- save can persist current definition for later use.
+- implement cache
+    - on handle word, LanguageBuddy first attempts to see if there are any saved instances
+      of the word.
+    - if it needs to, LanguageBuddy then pulls the information for the desired word.
+
+## TRAINING
+- ability to flash card self.
+
+- persistence with concepts of: 
+    - sessions
+    - lessons.
+    - historical progress (accuracy, )
