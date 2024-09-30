@@ -50,9 +50,14 @@ impl LanguageBuddy {
     // do_repl calls the loop. Also handles any necessary meta-data concerning loop lifetime
     // such as number of loops, timeouts, user-progress, etc. 
     pub fn do_repl(&mut self) {
-        loop {
-            self.repl();
-        } 
+        println!("{}", self.session.navigate_and_scrape_page("pasar").unwrap());
+
+        // loop {
+        //     let result = self.repl();
+        //     if result.is_err() {
+        //         println!("encounted error: {}", result.unwrap_err());
+        //     }
+        // } 
     }
 
     // repl is the main loop that handles user interaction.
@@ -76,8 +81,8 @@ impl LanguageBuddy {
             return Err(anyhow!("empty word"));
         }
 
-        self.session.lookup(&word)?;
-        self.session.get_definition()?;
+        let result = self.session.navigate_and_scrape_page(word)?;
+        println!("{:?}", result);
 
         Ok(())
     }

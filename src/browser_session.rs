@@ -1,9 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
 use headless_chrome::{Browser, LaunchOptions};
+
+use crate::word_reference_scraper;
 use scraper::{Html, Selector};
 
-use crate::parser;
 
 // A BrowserSession represents a session controlling a Chrome browser window.
 pub struct BrowserSession {
@@ -74,12 +75,12 @@ impl WordReferenceSpEnSession {
 
         let selector = Selector::parse("tr").unwrap();
 
-        let sections = parser::split_table_into_entries(document.select(&selector));
+        // let sections = parser::split_table_into_entries(definition_table);
 
-        sections.iter()
-            .map(|section| parser::extract_table_entry(section))
-            .filter(|o| o.is_some())
-            .for_each(|entry| println!("{}\n", entry.unwrap()));
+        // sections.iter()
+        //     .map(|section| parser::extract_table_entry(section))
+        //     .filter(|o| o.is_some())
+        //     .for_each(|entry| println!("{}\n", entry.unwrap()));
 
         return Ok("ok!".to_string());
     }
@@ -88,51 +89,11 @@ impl WordReferenceSpEnSession {
      * navigate_and_scrape_page attempts to navigate the browser session to the WordReference page
      * associated with the given word. 
      */
-    pub fn navigate_and_scrape_page(&self, word: &str) -> anyhow::Result<parser::WordReferencePage> {
+    pub fn navigate_and_scrape_page(&self, word: &str) -> anyhow::Result<word_reference_scraper::WordReferencePage> {
         self.lookup(word)?;
 
-        self.session.live_tab.wait_for_element_with_custom_timeout("table.WRD.clickTranslate.noTapHighlight", Duration::new(2,0))?;
+        self.session.live_tab.wait_for_element_with_custom_timeout("table.WRD.clickTranslate.noTapHighlight", Duration::new(15,0))?;
         let page_html = self.session.live_tab.get_content()?;
-        return parser::scrape_html(page_html);
+        return word_reference_scraper::scrape_page_html(page_html);
     }
 }
-
-// TODO: implement tokenizer as a iterator. Use iterator windows to do so.
-
-// struct TableTokenizer<'a, 'b>{
-//     iter: html::Select<'a, 'b>,
-//     cursor: Option<scraper::ElementRef<'a>>,
-// }
-
-// impl <'a, 'b> Iterator for TableTokenizer<'a,'b>{
-//     type Item = Vec<ElementRef<'a>>;
-
-//     // next processes a WordReference table into groupings of related rows. WordReference
-//     // splits table entries accross multiple HTML elements, grouped by their class names.
-//     // For table contents, these classes are alternating "even" and "odd".
-//     fn next(&mut self) -> Option<Vec<scraper::ElementRef<'a>>>{
-//         // let next = self.iter.by_ref().peekable().peek();
-
-//         let next = self.iter.by_ref().next();
-//         if next.is_none() {
-//             return None;
-//         };
-//         let next = next.unwrap();
-
-//         let tr_class = next.attr("class");
-//         if tr_class.is_none() {
-//             return Some(vec!(next));
-//         };
-//         let tr_class = tr_class.unwrap();
-
-//         return Some(
-//             self.iter.by_ref().take_while(
-//                 |tr| {
-//                     match tr.attr("class"){
-//                         None => return false,
-//                         Some(class) => return (class == tr_class),
-//                     };
-//             })
-//         .collect());
-//     }
-// }

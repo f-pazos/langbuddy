@@ -8,7 +8,7 @@ mod browser_session;
 use browser_session::WordReferenceSpEnSession;
 
 // mod word;
-mod parser;
+mod word_reference_scraper;
 mod langbuddy;
 use langbuddy::LanguageBuddy;
 
