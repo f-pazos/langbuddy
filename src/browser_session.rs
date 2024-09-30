@@ -13,14 +13,18 @@ pub struct BrowserSession {
 }
 
 impl BrowserSession {
-    // navigate_to goes to the given URL
+    /** 
+     * navigate_to goes to the given URL
+     */
     pub fn navigate_to(&self, url: &str) -> anyhow::Result<()> {
         self.live_tab.navigate_to(url)?;
         Ok(())
     }
 
-    // new returns a new BrowserSession. The browser exists until the returned object
-    // is dropped.
+    /** 
+     * new returns a new BrowserSession. The browser exists until the returned object
+     * is dropped.
+     */
     pub fn new() -> anyhow::Result<BrowserSession> {
         let browser = Browser::new(
             LaunchOptions::default_builder()
@@ -45,44 +49,30 @@ pub struct WordReferenceSpEnSession {
 }
 
 impl WordReferenceSpEnSession {
-    // new returns a new spanish-english session for word reference.com.
+    /** 
+     * new returns a new spanish-english session for word reference.com.
+     */
     pub fn new(url: &str) -> anyhow::Result<Self> {
         let session = BrowserSession::new()?;
         session.navigate_to(url)?;
         return Ok(Self { session: session, url: url.to_string()});
     }
 
-    // lookup navigates to the entry for the given word in the dictionary.
+    /**
+     * lookup navigates to the entry for the given word in the dictionary.
+     */
     pub fn lookup(&self, word: &str) -> anyhow::Result<()>{
-        self.session.navigate_to(&self.word_query_url(word))
+        self.session.navigate_to(&self.word_query_url(word))?;
+
+        let _ = self.session.live_tab.wait_for_element_with_custom_timeout("table.WRD.clickTranslate.noTapHighlight", Duration::new(2, 0))?;
+        Ok(())
     }
 
-    // word_query_url builds the URL to search for the given word.
+    /**
+     * word_query_url builds the URL to search for the given word.
+     */
     fn word_query_url(&self, word: &str) -> String {
         format!("{}{}", self.url, word)
-    }
-
-    // get_definition returns the definition for the word on the given page. 
-    pub fn get_definition(&self) -> anyhow::Result<String>{
-        let definition_table = self.session.live_tab.wait_for_element_with_custom_timeout("table.WRD.clickTranslate.noTapHighlight", Duration::new(2, 0));
-        if definition_table.is_err() {
-            return Err(definition_table.unwrap_err());
-        }
-        let definition_table = definition_table.unwrap();
-
-        let html = definition_table.get_content()?;
-        let document = Html::parse_fragment(&html);
-
-        let selector = Selector::parse("tr").unwrap();
-
-        // let sections = parser::split_table_into_entries(definition_table);
-
-        // sections.iter()
-        //     .map(|section| parser::extract_table_entry(section))
-        //     .filter(|o| o.is_some())
-        //     .for_each(|entry| println!("{}\n", entry.unwrap()));
-
-        return Ok("ok!".to_string());
     }
 
     /**

@@ -6,9 +6,9 @@ use std::{fmt, collections::HashMap};
  * A WordReferencePage stores the information for a single page
  * of the WordReference Spanish/English dictionary. Each WordReferencePage
  * often has several different forms of hte word that map to it (as an example,
- * different conjugations of the same verb). As such, one should not think of
- * WordReferencePage as being a bijection to words. Instead, each word uniquely
- * maps to a page in the WordReference dictionary.
+ * different conjugations of the same verb). As such, one should not think of the
+ * relationship between WordReferencePage and words as a bijection. Instead, each 
+ * word uniquely maps to a page in the WordReference dictionary.
  */
 #[derive(Debug)]
 pub struct WordReferencePage {  
@@ -38,9 +38,9 @@ impl fmt::Display for WordReferencePage {
 type DefinitionEntryID = String;
 
 /**
- * A WordReferenceEntry represents a single row within
- * a WordReference page section. Each of these sections
- * are unique entries and have unique IDs.
+ * A DefinitionEntry represents a WordReference definition block. These comprise
+ * of a single definition in spanish, corresponding definitions in English, parts
+ * of speech, as well as several examples in both English and Spanish. 
  */
 #[derive(Debug)]
 pub struct DefinitionEntry {
@@ -72,8 +72,8 @@ english_examples: {}",
 }
 
 /**
- * A Definition comprises of a string that defines a word as well as a
- * part of speech for that given word sense.
+ * A DefinitionAndPOS comprises of the text of a word's definition as well
+ * as its part of speech. 
  */
 #[derive(Debug)]
 pub struct DefinitionAndPOS {
