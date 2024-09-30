@@ -95,11 +95,12 @@ struct Examples {
     english: Vec<String>,
 }
 
-// split_table_into_rows processes a WordReference HTML table the rows that they represent.
-// WordReference uses colors to associate multiple <tr> elements together so that they can
-// act as a row with multiple lines. These multi-row groupings alternate the CSS classes of
-// "even" and "odd". This function splits the table into those groupings and returns a Vec of
-// those variable-width rows.
+/** split_table_into_rows processes a WordReference HTML table the rows that they represent.
+ * WordReference uses colors to associate multiple <tr> elements together so that they can
+ * act as a row with multiple lines. These multi-row groupings alternate the CSS classes of
+ * "even" and "odd". This function splits the table into those groupings and returns a Vec of
+ * those variable-width rows.
+ */
 pub fn split_table_into_entries(fragment: scraper::ElementRef) -> Vec<DefinitionTableRow> {
     let mut result = vec!();
 
@@ -131,7 +132,9 @@ pub fn split_table_into_entries(fragment: scraper::ElementRef) -> Vec<Definition
     return result;
 }
 
-// scrape_examples parses the rows and returns a list of examples, both spanish and english.
+/** 
+ * scrape_examples parses the rows and returns a list of examples, both spanish and english.
+ */
 fn scrape_examples(section: &DefinitionTableRow) -> Examples {
     let td_selector = Selector::parse("td").unwrap();
     let all_tds = section.iter()
@@ -150,8 +153,9 @@ fn scrape_examples(section: &DefinitionTableRow) -> Examples {
     };
 }
 
-// scrape_english_definitions extracts all english definitions associated with the section
-// of the table.
+/** scrape_english_definitions extracts all english definitions associated with the section
+ * of the table.
+ */
 fn scrape_english_definitions(section: &DefinitionTableRow) -> Vec<DefinitionAndPOS> {
     let mut result = vec!();
 
@@ -170,8 +174,9 @@ fn scrape_english_definitions(section: &DefinitionTableRow) -> Vec<DefinitionAnd
     result
 }
 
-// scrape_english_definition extracts a single english definition associated with the section
-// of the table.
+/** scrape_english_definition extracts a single english definition associated with the section
+ * of the table.
+ */
 fn scrape_english_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> anyhow::Result<DefinitionAndPOS> {
     let mut prefix = String::new();
     let span = match_exactly_one_element(td_1, "span.dsense");
@@ -194,12 +199,16 @@ fn scrape_english_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRe
     )
 }
 
-// extract_pos_from_td parses the part of speech from within the <td> element.
+/** 
+ * extract_pos_from_td parses the part of speech from within the <td> element.
+ */
 fn extract_pos_from_td(td: scraper::ElementRef) -> Option<String> {
     Some(match_exactly_one_element(td, "em.POS2")?.text().join(" "))
 }
 
-// parse_spanish_definition puts together a spanish definition from two adjacent <td> elements.
+/** 
+ * parse_spanish_definition puts together a spanish definition from two adjacent <td> elements.
+ */
 fn parse_spanish_definition(td_1: scraper::ElementRef, td_2: scraper::ElementRef) -> anyhow::Result<DefinitionAndPOS> {
     let word = match_exactly_one_element(td_1, "strong");
     if word.is_none() {
@@ -334,9 +343,11 @@ fn scrape_page_section(section: scraper::ElementRef) -> anyhow::Result<(PageSect
     return Ok((section_name, definitions))
 }
 
-// scrape_table_entry scrapes a single table entry. The entry is supplied as a vec
-// of consecutive <tr> elements that form a single dictionary entry on a
-// WordReference page. 
+/** 
+ * scrape_table_entry scrapes a single table entry. The entry is supplied as a vec
+ * of consecutive <tr> elements that form a single dictionary entry on a
+ * WordReference page. 
+ */
 fn scrape_table_entry(entry: &DefinitionTableRow) -> anyhow::Result<DefinitionEntry> {
     let examples = scrape_examples(entry);
 
@@ -405,7 +416,7 @@ fn scrape_spanish_definition(entry: &DefinitionTableRow) -> anyhow::Result<Defin
 }
 
 /**
- * BIG TOODO
+ * #TODO
  */
 struct AlsoAppears {
     spanish: Vec<String>,
