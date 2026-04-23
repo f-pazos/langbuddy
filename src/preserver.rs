@@ -1,56 +1,81 @@
-use std::fs::{self, OpenOptions};
+use std::{
+    error,
+    fs::{self, OpenOptions},
+    io::{BufRead, BufReader, Lines, Read, Write},
+    path::{Path, PathBuf},
+};
 
-use std::io::{self, Result, Write};
+use anyhow::anyhow;
 
-// A struct that allows one to preserve data in a file.
-#[derive(Debug, Clone)]
 pub struct Preserver {
-    output_file: String,
-    has_written: bool,
-    buffer: Vec<u8>,
+    directory: PathBuf,
+    initialized: bool,
+    lines: Vec<String>,
 }
 
 impl Preserver {
-    pub fn new(file: &str) -> Self {
-        Preserver {
-            output_file: file.to_owned(),
-            has_written: false,
-            buffer: Vec::new(),
+    const FILE: &str = "main.prs";
+    const TEMP_FILE: &str = "main.swp";
+
+    pub fn new(directory: &Path) -> anyhow::Result<Self> {
+        let mut errors = vec![];
+        if !directory.is_absolute() {
+            errors.push("path mut be absolute");
         }
+        if !directory.exists() {
+            errors.push("path must exist");
+        }
+        if !directory.is_dir() {
+            errors.push("path must be directory");
+        }
+        if !directory.is_absolute() {
+            errors.push("path mut be absolute");
+        }
+        if !errors.is_empty() {
+            return Err(anyhow!(errors.join(" ")));
+        }
+
+        Ok(Preserver {
+            directory: directory.into(),
+            initialized: false,
+            lines: Vec::new(),
+        })
     }
 
-    pub fn read_from_file(filename: &str) -> Result<Self> {
-        let mut p = Self::new(filename);
-        p.read_buffer()?;
-        Ok(p)
+    pub fn read(&mut self) -> anyhow::Result<()> {
+        // let mut p = Self::new(filename);
+        let f = fs::File::open(self.directory.join(Self::FILE))?;
+        let reader = BufReader::new(f);
+        self.lines = reader.lines().map(|l| l.unwrap()).collect();
+        Ok(())
     }
 
-    /** 
-     * read_buffer reads the contents of the Preserver's file into the
-     * preserver buffer.
-     */
-    fn read_buffer(&mut self) -> io::Result<usize> {
-        let contents = fs::read_to_string(&self.output_file)?;
-        self.buffer = contents.clone().into_bytes();
-        Ok(contents.len())
-    }
-
-    /** 
+    /**
      * write saves the contents of the preserver to the output file.
      */
-    pub fn write(&self) -> io::Result<usize> {
-        let mut f = OpenOptions::new().append(true).open(&self.output_file)?;
-        f.write(&self.buffer)
+    pub fn write(&self) -> anyhow::Result<()> {
+        let tmp_path = self.directory.join(Self::TEMP_FILE);
+        let mut tmp_file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&tmp_path)?;
+
+        for line in &self.lines {
+            writeln!(tmp_file, "{line}")?;
+        }
+        println!("{:?}", tmp_path);
+
+        fs::rename(tmp_path, self.directory.join(Self::FILE))?;
+        Ok(())
     }
 
-    /** 
+    /**
      * add_string takes a string and appends it to the Preserver's buffer
      * on a new line.
      */
-    pub fn add_string(&mut self, s: &str) {
-        self.buffer.push(b'\n');
-        self.buffer.append(&mut s.to_owned().into_bytes());
+    pub fn add_line(&mut self, s: &str) {
+        // self.buffer.push(b'\n');
+        self.lines.push(s.to_owned());
     }
 }
-
-
