@@ -74,9 +74,11 @@ impl LanguageBuddy {
             return REPLResult::SIGQuit;
         };
 
-        if buffer == f.get_content().answer {
+        if f.check_answer(buffer.to_owned()) {
             println!("omfg you fuckin got it chum, give him a point");
             self.preserver.add_line("one quarter portion....");
+        } else {
+            println!("lmao this guy sucks balls he's so bad");
         }
 
         let x = self.preserver.write();
