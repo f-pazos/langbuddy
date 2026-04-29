@@ -9,9 +9,46 @@ use anyhow::anyhow;
 
 pub struct Preserver {
     directory: PathBuf,
-    initialized: bool,
     lines: Vec<String>,
 }
+
+/**
+*  next feaure:
+*   entry concept
+*   - word
+*   - date added
+* - flash card feature
+*
+*      - prompt
+*      - (phase2) definition of "parameters"
+*      - answer
+*
+* "Content"
+*  - serializable
+*  - trainable
+*  -
+*
+* corpus
+*  - references to individual flash cards
+*  - library
+*  - each card has "tags" that it belong to
+*  - user defined decks
+*
+* corpus tags
+*  - user creatable
+*  - multiple tags
+*  -
+*
+* corpus actions
+  - user can delete examples
+  - retag
+  - 
+
+
+
+
+
+*/
 
 impl Preserver {
     const FILE: &str = "main.prs";
@@ -37,7 +74,6 @@ impl Preserver {
 
         Ok(Preserver {
             directory: directory.into(),
-            initialized: false,
             lines: Vec::new(),
         })
     }

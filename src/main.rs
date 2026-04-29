@@ -12,6 +12,9 @@ use preserver::Preserver;
 mod langbuddy;
 use langbuddy::LanguageBuddy;
 
+mod flashcard;
+mod content;
+mod flashcard_deck;
 
 fn main() -> anyhow::Result<()> {
     let mut lb = LanguageBuddy::new()?;
