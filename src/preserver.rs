@@ -42,7 +42,7 @@ pub struct Preserver {
 * corpus actions
   - user can delete examples
   - retag
-  - 
+  -
 
 
 
@@ -100,7 +100,6 @@ impl Preserver {
         for line in &self.lines {
             writeln!(tmp_file, "{line}")?;
         }
-        println!("{:?}", tmp_path);
 
         fs::rename(tmp_path, self.directory.join(Self::FILE))?;
         Ok(())

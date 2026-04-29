@@ -5,8 +5,8 @@ pub trait FlashcardContent<I> {
 }
 
 pub struct StringContent {
-    prompt: String,
-    answer: String,
+    pub prompt: String,
+    pub answer: String,
 }
 
 impl FlashcardContent<String> for StringContent {

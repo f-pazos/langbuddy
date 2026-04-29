@@ -6,7 +6,16 @@ use std::path::PathBuf;
 
 use anyhow::anyhow;
 
+use crate::content;
+use crate::flashcard;
+use crate::flashcard::Flashcard;
 use crate::preserver::Preserver;
+
+enum REPLResult {
+    Ok,
+    SIGQuit,
+    Err(anyhow::Error),
+}
 
 pub struct LanguageBuddy {
     preserver: Preserver,
@@ -29,9 +38,13 @@ impl LanguageBuddy {
     pub fn do_repl(&mut self) -> anyhow::Result<()> {
         loop {
             let result = self.repl();
-            if result.is_err() {
-                println!("encounted error: {}", result.unwrap_err());
-            }
+            match result {
+                REPLResult::Err(e) => {
+                    println!("error! {:?}", e);
+                }
+                REPLResult::Ok => continue,
+                REPLResult::SIGQuit => return Ok(()),
+            };
         }
         Ok(())
     }
@@ -39,17 +52,39 @@ impl LanguageBuddy {
     /**
      * repl is the main loop that handles user interaction.
      */
-    pub fn repl(&mut self) -> anyhow::Result<()> {
-        println!("enter:");
-        let mut buffer = String::new();
-        io::stdin().read_line(&mut buffer)?;
+    pub fn repl(&mut self) -> REPLResult {
+        let c = content::StringContent {
+            prompt: "prompt?".to_string(),
+            answer: "answer".to_string(),
+        };
+        let f = flashcard::VocabFlashcard::new(c);
 
-        if buffer == "quit" {
-            return Err(anyhow!("quitting"));
+        println!("{}", f.get_content().prompt);
+
+        let mut buffer = String::new();
+        let r = io::stdin().read_line(&mut buffer);
+        match r {
+            Err(e) => return REPLResult::Err(e.into()),
+            Ok(_) => (),
         };
 
-        self.preserver.add_line(&buffer);
-        self.preserver.write()
+        let buffer = buffer.trim();
+
+        if buffer == "quit" {
+            return REPLResult::SIGQuit;
+        };
+
+        if buffer == f.get_content().answer {
+            println!("omfg you fuckin got it chum, give him a point");
+            self.preserver.add_line("one quarter portion....");
+        }
+
+        let x = self.preserver.write();
+        if x.is_err() {
+            return REPLResult::Err(x.unwrap_err());
+        };
+
+        REPLResult::Ok
     }
 
     /**

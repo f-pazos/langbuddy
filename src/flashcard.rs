@@ -12,7 +12,7 @@ pub struct VocabFlashcard {
 }
 
 impl VocabFlashcard {
-    fn new(content: content::StringContent) -> Self {
+    pub fn new(content: content::StringContent) -> Self {
         Self { content }
     }
 }
