@@ -7,9 +7,15 @@ use std::{
 
 use anyhow::anyhow;
 
-pub struct Preserver {
+use serde::{Deserialize, Serialize};
+use serde_json::{Result, Value};
+
+// use crate::content::FlashcardContent;
+
+#[derive(Serialize, Deserialize)]
+pub struct FileBackedBuffer<C> {
     directory: PathBuf,
-    lines: Vec<String>,
+    content: C,
 }
 
 /**
@@ -50,7 +56,7 @@ pub struct Preserver {
 
 */
 
-impl Preserver {
+impl FileBackedBuffer<C> {
     const FILE: &str = "main.prs";
     const TEMP_FILE: &str = "main.swp";
 
@@ -72,13 +78,13 @@ impl Preserver {
             return Err(anyhow!(errors.join(" ")));
         }
 
-        Ok(Preserver {
+        Ok(FileBackedBuffer {
             directory: directory.into(),
             lines: Vec::new(),
         })
     }
 
-    pub fn read(&mut self) -> anyhow::Result<()> {
+    pub fn load(&mut self) -> anyhow::Result<()> {
         // let mut p = Self::new(filename);
         let f = fs::File::open(self.directory.join(Self::FILE))?;
         let reader = BufReader::new(f);
