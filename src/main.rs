@@ -1,25 +1,25 @@
-use std::io;
-use std::io::prelude::*;
+// mod control;
+// use control::TopLevelControl;
 
-// mod filesystem;
-// use filesystem::FileBackedBuffer;
-
-// mod browser_session;
-// use browser_session::WordReferenceSpEnSession;
-
-// // mod word;
-// mod word_reference_scraper;
-mod repl;
-use repl::TopLevelREPL;
-
-mod constants;
+mod terminal;
 // mod content;
+
+mod orchestrator;
+use orchestrator::Orchestrator;
+
+mod control;
 // mod flashcard;
 // mod flashcard_deck;
 
 fn main() -> anyhow::Result<()> {
-    let mut repl = TopLevelREPL::new()?;
-    repl.do_repl()?;
-    println!("success....");
-    Ok(())
+    let orchestrator = orchestrator::Orchestrator::new();
+    loop {
+        match orchestrator.repl() {
+            Err(x) => {
+                println!("encountered error {x}, quitting.");
+                return Ok(());
+            }
+            _ => (),
+        }
+    }
 }
