@@ -1,14 +1,19 @@
+use std::io::{self, Write};
+
 /**
  * A TerminalInterface coordinates program behavior with the terminal.
  */
-struct TerminalInterface {}
-impl TerminalInterface {
-    fn poll_input(&self) -> Option<char> {
-        todo!();
+pub struct TerminalClient;
+impl TerminalClient {
+    pub fn poll_input(&self) -> String {
+        let mut s = String::new();
+        io::stdin().read_line(&mut s).ok();
+        return s;
     }
 
-    fn show_output(&self, content: &str) {
-        todo!();
+    pub fn display_content(&self, content: Content) {
+        print!("{}", content.text);
+        io::stdout().flush();
     }
 }
 

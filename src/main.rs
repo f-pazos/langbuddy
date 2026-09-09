@@ -12,7 +12,7 @@ mod control;
 // mod flashcard_deck;
 
 fn main() -> anyhow::Result<()> {
-    let orchestrator = orchestrator::Orchestrator::new();
+    let mut orchestrator = orchestrator::Orchestrator::new();
     loop {
         match orchestrator.repl() {
             Err(x) => {

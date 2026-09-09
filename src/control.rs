@@ -13,18 +13,19 @@ use crate::terminal;
  * interaction. It defines the minimum requirements for interactivity.
  */
 pub trait InteractiveRoutine {
-    // An idiosyncratic Signal type, defined by the InteractiveRoutine and
-    // communicated by the outside world.
+    // Each InteractiveRoutine implementation specifies its own Signal type.
+    // This encapsulates the values that can be communicated to the Routine
+    // externally.
     // type Signal;
 
     // Handle signals created by the control surface and update internal state.
-    fn process_signals(&self, signals: Vec<String>) -> anyhow::Result<()>;
+    fn process_signals(&mut self, signal: String);
 
     // Returns signals for the higher level program to handle.
     fn poll_signals(&self) -> Vec<RoutineSignal>;
 
     // Render internal state as content to be displayed.
-    fn poll_content(&self) -> terminal::Content;
+    fn render_content(&self) -> terminal::Content;
 }
 
 /**
