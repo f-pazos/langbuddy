@@ -19,22 +19,23 @@ pub trait InteractiveRoutine {
     // type Signal;
 
     // Handle signals created by the control surface and update internal state.
-    fn process_signals(&mut self, signal: String);
+    fn process_inputs(&mut self, inputs: terminal::Inputs);
 
     // Returns signals for the higher level program to handle.
-    fn poll_signals(&self) -> Vec<RoutineSignal>;
+    fn poll_signals(&self) -> &RoutineSignal;
 
     // Render internal state as content to be displayed.
     fn render_content(&self) -> terminal::Content;
 }
 
+type RoutineSignal = Vec<Signals>;
+
 /**
- * A RoutineResult communicates the routine's result to the parent routine.
+ * A Signals communicates the execution signal to the top level.
  */
-pub enum RoutineSignal {
-    SIGQuit, // Terminate the program.
-    Err(anyhow::Error),
-    Ok,
+pub enum Signals {
+    SIGTerminate,          // Terminate the routine.
+    SIGErr(anyhow::Error), // The routine encountered an error.
 }
 
 //**

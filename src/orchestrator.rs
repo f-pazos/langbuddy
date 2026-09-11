@@ -1,8 +1,15 @@
 use anyhow::Result;
 use scraper::error::SelectorErrorKind::QualRuleInvalid;
-use std::{collections, io};
+use std::{
+    collections, io,
+    process::{self, exit},
+};
 
-use crate::{control::InteractiveRoutine, terminal};
+use crate::{
+    control::{self, InteractiveRoutine},
+    terminal,
+    top_level_routine::TopLevelRoutine,
+};
 
 /**
  * The Orchestrator is the top level thread of execution for the program. It
@@ -17,32 +24,6 @@ pub struct Orchestrator {
     terminal_client: terminal::TerminalClient,
 }
 
-pub struct DefaultRoutine {
-    text: String,
-}
-
-impl Default for DefaultRoutine {
-    fn default() -> Self {
-        Self {
-            text: "default_routine".to_string(),
-        }
-    }
-}
-
-impl InteractiveRoutine for DefaultRoutine {
-    fn process_signals(&mut self, signal: String) {
-        self.text = signal;
-    }
-
-    fn poll_signals(&self) -> Vec<crate::control::RoutineSignal> {
-        vec![]
-    }
-
-    fn render_content(&self) -> crate::terminal::Content {
-        self.text.to_owned().into()
-    }
-}
-
 type RoutineID = u64;
 
 impl Orchestrator {
@@ -54,21 +35,46 @@ impl Orchestrator {
             terminal_client: terminal::TerminalClient,
         };
 
-        let default_id = orchestrator.register_routine::<DefaultRoutine>(Default::default());
+        let default_id = orchestrator.register_routine::<TopLevelRoutine>(Default::default());
         orchestrator.active_id = default_id;
 
         return orchestrator;
     }
 
+    pub fn orchestrate(&mut self) -> anyhow::Result<()> {
+        loop {
+            match self.iterate() {
+                Err(x) => {
+                    println!("encountered error {x}, quitting.");
+                    return Ok(());
+                }
+                _ => (),
+            }
+        }
+    }
+
     /**
      * Step through the REPL.
      */
-    pub fn repl(&mut self) -> anyhow::Result<()> {
+    fn iterate(&mut self) -> anyhow::Result<()> {
         let content = self.active_routine().render_content();
         self.terminal_client.display_content(content);
 
         let input = self.terminal_client.poll_input();
-        self.active_routine().process_signals(input);
+        self.active_routine()
+            .process_inputs(terminal::Inputs { content: input });
+
+        for signal in self.active_routine().poll_signals() {
+            match signal {
+                control::Signals::SIGTerminate => {
+                    process::exit(0);
+                }
+                _ => {
+                    todo!();
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -82,22 +88,3 @@ impl Orchestrator {
         self.routines.get_mut(&self.active_id).unwrap()
     }
 }
-
-// fn field_input(&self) -> anyhow::Result<()> {
-//     Ok(())
-//     io::stdout().flush()?;
-//     let word = input();
-
-//     // if word.is_err() {
-//     //     return Err(anyhow!("problem receiving input: {}", word.unwrap_err()));
-//     // };
-
-//     // let word = word.unwrap();
-//     // let word = word.trim();
-
-//     // if word == "save" {
-//     //     return Ok(UserInput::Command(Command::Save));
-//     // }
-
-//     // return Ok(UserInput::Word(word.to_string()));
-// }
